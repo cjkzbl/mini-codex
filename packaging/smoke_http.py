@@ -10,7 +10,7 @@ from pathlib import Path
 
 root = Path(__file__).resolve().parents[1]
 parser = argparse.ArgumentParser()
-parser.add_argument("--bundle", type=Path, default=root / "dist/0.5.3/MiniCodex")
+parser.add_argument("--bundle", type=Path, default=root / "dist/0.5.4/MiniCodex")
 args = parser.parse_args()
 report = root / "artifacts" / "package-http-smoke.json"
 requests: list[dict] = []

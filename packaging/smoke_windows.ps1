@@ -1,4 +1,4 @@
-param([string]$BundleDirectory = "dist/0.5.3/MiniCodex")
+param([string]$BundleDirectory = "dist/0.5.4/MiniCodex")
 $ErrorActionPreference = "Stop"
 $projectRoot = Split-Path -Parent $PSScriptRoot
 $executable = Join-Path (Join-Path $projectRoot $BundleDirectory) "MiniCodex.exe"

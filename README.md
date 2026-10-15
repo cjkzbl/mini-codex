@@ -1,12 +1,14 @@
 # MiniCodex · Windows 编程助手
 
-当前版本 **v0.5.3**。支持模型等待响应时的流光文字与呼吸光点、对话行菜单、输入框三档权限、Enter 发送/Shift+Enter 换行、配置保存与会话恢复。Docker 沙箱已完成 Windows + Docker Desktop Linux 引擎的实机验证，详见 [Docker 验收](docs/docker-sandbox.md)。
+当前版本 **v0.5.4**。支持模型等待响应时的流光文字与呼吸光点、对话行菜单、输入框三档权限、Enter 发送/Shift+Enter 换行、配置保存与会话恢复。Docker 沙箱已完成 Windows + Docker Desktop Linux 引擎的实机验证，详见 [Docker 验收](docs/docker-sandbox.md)。
 
 ## 开始使用
 
-GitHub 源码仓库不包含本机的 `dist/` 安装包或 `.venv/` 开发环境。首次从源码运行，请按下方“开发与验证”安装依赖；Windows 构建产物可在成功运行的 GitHub Actions 中下载。
+从 [v0.5.4 发布页](https://github.com/cjkzbl/mini-codex/releases/tag/v0.5.4) 下载安装器或 Windows x64 便携包，并核对随附的 SHA256SUMS.txt。更新内容见 [v0.5.4 发行说明](docs/release-v0.5.4.md)。
 
-运行 `dist/0.5.3/MiniCodex-0.5.3-Setup.exe` 安装，或双击 `dist/0.5.3/MiniCodex/MiniCodex.exe`（保留整个目录及 `_internal`）。安装包供当前用户使用，开始菜单提供启动和卸载入口，桌面快捷方式可选。升级前关闭客户端；默认卸载保留用户数据，详见 [M4 验收](docs/m4-status.md)。当前未做代码签名。
+GitHub 源码仓库不包含本机的 `dist/` 安装包或 `.venv/` 开发环境。首次从源码运行，请按下方“开发与验证”安装依赖；Windows 构建产物也可在成功运行的 GitHub Actions 中下载。
+
+运行 `dist/0.5.4/MiniCodex-0.5.4-Setup.exe` 安装，或双击 `dist/0.5.4/MiniCodex/MiniCodex.exe`（保留整个目录及 `_internal`）。安装包供当前用户使用，开始菜单提供启动和卸载入口，桌面快捷方式可选。升级前关闭客户端；默认卸载保留用户数据，详见 [M4 验收](docs/m4-status.md)。当前未做代码签名。
 
 1. 打开本地项目，在模型设置中填写地址、模型 ID 与 Key。DeepSeek 可点击“填入 DeepSeek 官方配置”，地址 `https://api.deepseek.com`、模型 `deepseek-flash`。OpenAI 地址为 `https://api.openai.com/v1`。
 2. 输入框左下角选择权限：只读仅查看；默认权限允许修改和原生命令、逐次审批；完全访问自动执行现有工具操作。原生命令具有当前用户权限，无 OS 沙箱。修改权限沿用当前对话，从下一轮生效；运行中不能切换。
@@ -73,9 +75,9 @@ python -m venv .venv
 # Docker 专项：普通测试默认跳过实机项；首次准备镜像时显式使用 -PullImage
 powershell -NoProfile -ExecutionPolicy Bypass -File packaging/test_docker.ps1 -PullImage
 powershell -NoProfile -ExecutionPolicy Bypass -File packaging/test_docker.ps1
-powershell -NoProfile -ExecutionPolicy Bypass -File packaging/build_windows.ps1 -DistributionSubdir dist/0.5.3
-powershell -NoProfile -ExecutionPolicy Bypass -File packaging/smoke_windows.ps1 -BundleDirectory dist/0.5.3/MiniCodex
-.\.venv\Scripts\python.exe packaging/smoke_http.py --bundle dist/0.5.3/MiniCodex
+powershell -NoProfile -ExecutionPolicy Bypass -File packaging/build_windows.ps1 -DistributionSubdir dist/0.5.4
+powershell -NoProfile -ExecutionPolicy Bypass -File packaging/smoke_windows.ps1 -BundleDirectory dist/0.5.4/MiniCodex
+.\.venv\Scripts\python.exe packaging/smoke_http.py --bundle dist/0.5.4/MiniCodex
 powershell -NoProfile -ExecutionPolicy Bypass -File packaging/smoke_m2.ps1
 powershell -NoProfile -ExecutionPolicy Bypass -File packaging/build_installer.ps1
 powershell -NoProfile -ExecutionPolicy Bypass -File packaging/build_installer.ps1 -TestBuild
@@ -91,11 +93,12 @@ DeepSeek 对话与工具定义已实测，用户确认手动读文件分析通�
 
 源码分为 [核心后端](minicodex/backend/) 和 [桌面前端](minicodex/frontend/)。后端包含 Agent 运行时、模型接入、工具执行、应用服务和存储；前端包含 Qt 界面、桌面启动与窗口维护逻辑。前端通过 `ApplicationFacade` 调用后端，后端不导入 Qt 或前端模块。启动命令仍为 `python -m minicodex`，追踪查看仍为 `python -m minicodex trace show ...`。完整目录与依赖边界见 [架构](docs/architecture.md)。
 
-`tests/` 是正式测试源码，`packaging/` 是构建与发行包自检脚本，`docs/` 是设计和验收文档。测试截图、日志与报告写入 `artifacts/`，构建输出写入 `dist/`，两者均不纳入版本管理。当前发行包位于 `dist/0.5.3/`。
+`tests/` 是正式测试源码，`packaging/` 是构建与发行包自检脚本，`docs/` 是设计和验收文档。测试截图、日志与报告写入 `artifacts/`，构建输出写入 `dist/`，两者均不纳入版本管理。当前发行包位于 `dist/0.5.4/`。
 
 - [v0.5.3 界面更新](docs/ui-v0.5.3.md)、[M4 验收](docs/m4-status.md)、[M3 历史验收](docs/m3-status.md)、[M2 历史验收](docs/m2-status.md)、[M1 历史验收](docs/m1-status.md)
 - [架构](docs/architecture.md)、[协议](docs/protocol.md)、[执行边界](docs/security.md)
 - [Docker 沙箱验收与复测](docs/docker-sandbox.md)
+- [v0.5.4 发行说明](docs/release-v0.5.4.md)
 - [主循环](minicodex/backend/core/runtime.py)、[工具路由](minicodex/backend/tools/router.py)
 - [补丁](minicodex/backend/execution/patch.py)、[命令](minicodex/backend/execution/commands.py)、[Windows 句柄/进程](minicodex/backend/execution/windows.py)、[审批](minicodex/backend/execution/approval.py)
 

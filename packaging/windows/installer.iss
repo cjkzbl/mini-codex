@@ -1,5 +1,5 @@
 #ifndef AppVersion
-  #define AppVersion "0.5.3"
+  #define AppVersion "0.5.4"
 #endif
 #ifndef BundleDir
   #error BundleDir is required

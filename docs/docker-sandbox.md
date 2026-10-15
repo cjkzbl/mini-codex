@@ -56,6 +56,6 @@ $env:PATH = "$env:LOCALAPPDATA\Programs\DockerDesktop\resources\bin;" + $env:PAT
 Remove-Item Env:MINICODEX_DOCKER_TESTS
 ```
 
-常规 GitHub Windows CI 运行离线回归，默认跳过实机组，不将 hosted runner 当作已配置 Docker Desktop 的验收机。实机测试要求 Linux cgroup v2；其他 Docker Desktop/Engine 版本、cgroup v1、非 Windows 客户端、恶意内核或 daemon 漏洞不在本次验收范围。现有 `dist/0.5.3` 安装包没有重新构建，源码中的执行器修复需重新打包后才会进入发行包。
+常规 GitHub Windows CI 运行离线回归，默认跳过实机组，不将 hosted runner 当作已配置 Docker Desktop 的验收机。实机测试要求 Linux cgroup v2；其他 Docker Desktop/Engine 版本、cgroup v1、非 Windows 客户端、恶意内核或 daemon 漏洞不在本次验收范围。执行器修复随 v0.5.4 重新打包发布；旧的 v0.5.3 程序包不包含这些修复。
 
 参考：[Docker Desktop Windows 安装](https://docs.docker.com/desktop/setup/install/windows-install/)、[Docker create](https://docs.docker.com/reference/cli/docker/container/create/)、[容器资源限制](https://docs.docker.com/engine/containers/resource_constraints/)。
