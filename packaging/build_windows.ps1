@@ -32,7 +32,7 @@ try {
     Copy-Item -LiteralPath docs/m4-status.md -Destination (Join-Path $bundleRoot "M4-STATUS.md")
     Copy-Item -LiteralPath docs/ui-v0.5.3.md -Destination (Join-Path $bundleRoot "UI-UPDATE.md")
     Copy-Item -LiteralPath docs/docker-sandbox.md -Destination (Join-Path $bundleRoot "DOCKER-SANDBOX.md")
-    Copy-Item -LiteralPath docs/release-v0.5.4.md -Destination (Join-Path $bundleRoot "RELEASE-NOTES.md")
+    Copy-Item -LiteralPath docs/release-v0.5.5.md -Destination (Join-Path $bundleRoot "RELEASE-NOTES.md")
     Write-Output "Built: $executable"
 } finally {
     $env:PATH = $originalPath

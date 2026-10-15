@@ -33,7 +33,7 @@ jobs:
       - run: python -m pip install -r requirements-dev.lock
       - run: python -m pip install --no-deps --no-build-isolation -e .
       - shell: pwsh
-        run: ./packaging/build_windows.ps1 -Python python -DistributionSubdir dist/0.5.4
+        run: ./packaging/build_windows.ps1 -Python python -DistributionSubdir dist/0.5.5
       - shell: pwsh
         run: ./packaging/smoke_windows.ps1
       - run: python packaging/smoke_http.py
@@ -43,7 +43,7 @@ jobs:
         with:
           name: MiniCodex-Windows-M4
           path: |
-            dist/0.5.4/MiniCodex/
+            dist/0.5.5/MiniCodex/
             artifacts/package-smoke.json
             artifacts/package-preview.png
             artifacts/package-http-smoke.json

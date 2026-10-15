@@ -1,17 +1,17 @@
 # MiniCodex · Windows 编程助手
 
-当前版本 **v0.5.4**。支持模型等待响应时的流光文字与呼吸光点、对话行菜单、输入框三档权限、Enter 发送/Shift+Enter 换行、配置保存与会话恢复。Docker 沙箱已完成 Windows + Docker Desktop Linux 引擎的实机验证，详见 [Docker 验收](docs/docker-sandbox.md)。
+当前版本 **v0.5.5**。支持模型等待响应时的流光文字与呼吸光点、对话行菜单、输入框三档权限、Enter 发送/Shift+Enter 换行、配置保存与会话恢复。Docker 沙箱已完成 Windows + Docker Desktop Linux 引擎的实机验证，详见 [Docker 验收](docs/docker-sandbox.md)。
 
 ## 开始使用
 
-从 [v0.5.4 发布页](https://github.com/cjkzbl/mini-codex/releases/tag/v0.5.4) 下载安装器或 Windows x64 便携包，并核对随附的 SHA256SUMS.txt。更新内容见 [v0.5.4 发行说明](docs/release-v0.5.4.md)。
+从 [v0.5.5 发布页](https://github.com/cjkzbl/mini-codex/releases/tag/v0.5.5) 下载安装器或 Windows x64 便携包，并核对随附的 SHA256SUMS.txt。更新内容见 [v0.5.5 发行说明](docs/release-v0.5.5.md)。
 
 GitHub 源码仓库不包含本机的 `dist/` 安装包或 `.venv/` 开发环境。首次从源码运行，请按下方“开发与验证”安装依赖；Windows 构建产物也可在成功运行的 GitHub Actions 中下载。
 
-运行 `dist/0.5.4/MiniCodex-0.5.4-Setup.exe` 安装，或双击 `dist/0.5.4/MiniCodex/MiniCodex.exe`（保留整个目录及 `_internal`）。安装包供当前用户使用，开始菜单提供启动和卸载入口，桌面快捷方式可选。升级前关闭客户端；默认卸载保留用户数据，详见 [M4 验收](docs/m4-status.md)。当前未做代码签名。
+运行 `dist/0.5.5/MiniCodex-0.5.5-Setup.exe` 安装，或双击 `dist/0.5.5/MiniCodex/MiniCodex.exe`（保留整个目录及 `_internal`）。安装包供当前用户使用，开始菜单提供启动和卸载入口，桌面快捷方式可选。升级前关闭客户端；默认卸载保留用户数据，详见 [M4 验收](docs/m4-status.md)。当前未做代码签名。
 
 1. 打开本地项目，在模型设置中填写地址、模型 ID 与 Key。DeepSeek 可点击“填入 DeepSeek 官方配置”，地址 `https://api.deepseek.com`、模型 `deepseek-flash`。OpenAI 地址为 `https://api.openai.com/v1`。
-2. 输入框左下角选择权限：只读仅查看；默认权限允许修改和原生命令、逐次审批；完全访问自动执行现有工具操作。原生命令具有当前用户权限，无 OS 沙箱。修改权限沿用当前对话，从下一轮生效；运行中不能切换。
+2. 模型设置中的“执行环境”选择 Windows 原生执行或 Docker 沙箱；选择 Docker 后填写本地镜像。输入框左下角单独选择审批权限：只读仅查看；默认权限允许修改文件并在所选环境中运行命令、逐次审批；完全访问自动执行现有工具操作。选择执行环境不会自动开启命令权限，切换权限也不会覆盖执行环境；只读期间及重启后都会保留所选环境。原生命令具有当前用户权限，无 OS 沙箱；Docker 命令的改动仅影响临时副本，文件补丁仍按权限修改原项目。设置变更沿用当前对话，从下一轮生效；运行中不能切换。
 3. 输入“修复这个边界错误，并运行测试”。查看 diff 后批准补丁；核对完整 argv、cwd、执行模式和超时后批准命令。
 4. 中间按步骤显示模型回答和工具状态；点击工具行展开参数、结果、diff 或命令日志。默认权限的审批预览和批准/拒绝按钮位于输入框上方。测试失败会交回模型继续修复，受预算限制；停止按钮等待清理后终止。输入框右下角显示模型名称，点击可打开模型设置。
 
@@ -44,7 +44,7 @@ SQLite 保存本机对话正文、工具调用、展示事件与统计；JSONL �
 
 命令审批绑定 argv/cwd/模式/时限及允许项目文件摘要，批准后源文件变化需重新审批。快照单文件 1 MiB、累计 64 MiB、扫描 10000 条，大仓库需缩小工作区。.bat/.cmd 不隐式执行；需要脚本时显式指定解释器并审批完整参数。
 
-Docker 需本地 Linux 后端和预先准备的镜像，批准前固定本地 image ID，执行前重新核对，不自动拉取或降级宿主。容器挂载过滤后的临时项目副本，改动不写回源项目；非 root、禁网络、只读根、移除 capabilities、no-new-privileges、CPU/内存/PID 限制，并禁用镜像健康检查。停止按唯一名称清理容器及匿名卷，只有明确确认该容器不存在才完成。状态查询或清理不明时终止任务，不将 Docker CLI 的退出视为容器执行成功。已有 14 项真实 Docker 测试覆盖以上行为。
+Docker 需本地 Linux 后端和预先准备的镜像，批准前固定本地 image ID，执行前重新核对，不自动拉取或降级宿主。容器挂载过滤后的临时项目副本，改动不写回源项目；非 root、禁网络、只读根、移除 capabilities、no-new-privileges、CPU/内存/PID 限制，并禁用镜像健康检查。停止按唯一名称清理容器及匿名卷，只有明确确认该容器不存在才完成。状态查询或清理不明时终止任务，不将 Docker CLI 的退出视为容器执行成功。已有 16 项真实 Docker 测试覆盖以上行为与 GUI 执行入口。
 
 ## 预算与上下文
 
@@ -75,9 +75,9 @@ python -m venv .venv
 # Docker 专项：普通测试默认跳过实机项；首次准备镜像时显式使用 -PullImage
 powershell -NoProfile -ExecutionPolicy Bypass -File packaging/test_docker.ps1 -PullImage
 powershell -NoProfile -ExecutionPolicy Bypass -File packaging/test_docker.ps1
-powershell -NoProfile -ExecutionPolicy Bypass -File packaging/build_windows.ps1 -DistributionSubdir dist/0.5.4
-powershell -NoProfile -ExecutionPolicy Bypass -File packaging/smoke_windows.ps1 -BundleDirectory dist/0.5.4/MiniCodex
-.\.venv\Scripts\python.exe packaging/smoke_http.py --bundle dist/0.5.4/MiniCodex
+powershell -NoProfile -ExecutionPolicy Bypass -File packaging/build_windows.ps1 -DistributionSubdir dist/0.5.5
+powershell -NoProfile -ExecutionPolicy Bypass -File packaging/smoke_windows.ps1 -BundleDirectory dist/0.5.5/MiniCodex
+.\.venv\Scripts\python.exe packaging/smoke_http.py --bundle dist/0.5.5/MiniCodex
 powershell -NoProfile -ExecutionPolicy Bypass -File packaging/smoke_m2.ps1
 powershell -NoProfile -ExecutionPolicy Bypass -File packaging/build_installer.ps1
 powershell -NoProfile -ExecutionPolicy Bypass -File packaging/build_installer.ps1 -TestBuild
@@ -85,7 +85,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File packaging/build_installer.ps
 .\.venv\Scripts\python.exe -m minicodex trace show <thread_id> --data-dir <目录>
 ```
 
-开启 `MINICODEX_DOCKER_TESTS=1` 后全量 **260 项测试通过**，不需要外部 Key；其中 Docker 专项为 51 项模拟/故障回归和 14 项真实容器测试。普通测试不要求 Docker，默认运行 246 项并明确跳过 14 项实机测试；显式开启实机测试后，缺少 Docker、Linux 后端或本地镜像会失败，不会静默跳过。Ruff 检查/格式覆盖 91 个 Python 文件，mypy strict 覆盖 57 个源文件。动画、后端无 Qt 运行、会话删除、权限、持久化、进程清理和上下文测试均保留。程序包另做离线、本机 HTTP、原生读改测自检；构建安装器需要 Inno Setup 6.7.3。10 个脚本化 bug 验证框架闭环，不是模型能力 Benchmark。
+开启 `MINICODEX_DOCKER_TESTS=1` 后全量 **280 项测试通过**，不需要外部 Key。普通测试运行 264 项并明确跳过 16 项实机测试；Docker 专项包括 51 项模拟/故障回归和 16 项真实容器测试。GUI 验证覆盖环境与权限独立、只读切换、配置重启恢复、取消和保存失败，以及默认/完全访问下的真实 Docker 命令。显式开启实机测试后，缺少 Docker、Linux 后端或本地镜像会失败，不会静默跳过。Ruff 检查/格式覆盖 92 个 Python 文件，mypy strict 覆盖 57 个源文件。程序包另做离线、本机 HTTP、原生读改测自检；构建安装器需要 Inno Setup 6.7.3。10 个脚本化 bug 验证框架闭环，不是模型能力 Benchmark。
 
 DeepSeek 对话与工具定义已实测，用户确认手动读文件分析通过。Docker 当前验收环境为 Windows 11、WSL 2.6.1、Docker Desktop 4.95.0 / Engine 29.8.2、Linux cgroup v2；详情与复测方法见 Docker 验收文档。真实模型 M2 修复和干净 Windows 安装仍需分别验收。
 
@@ -93,12 +93,12 @@ DeepSeek 对话与工具定义已实测，用户确认手动读文件分析通�
 
 源码分为 [核心后端](minicodex/backend/) 和 [桌面前端](minicodex/frontend/)。后端包含 Agent 运行时、模型接入、工具执行、应用服务和存储；前端包含 Qt 界面、桌面启动与窗口维护逻辑。前端通过 `ApplicationFacade` 调用后端，后端不导入 Qt 或前端模块。启动命令仍为 `python -m minicodex`，追踪查看仍为 `python -m minicodex trace show ...`。完整目录与依赖边界见 [架构](docs/architecture.md)。
 
-`tests/` 是正式测试源码，`packaging/` 是构建与发行包自检脚本，`docs/` 是设计和验收文档。测试截图、日志与报告写入 `artifacts/`，构建输出写入 `dist/`，两者均不纳入版本管理。当前发行包位于 `dist/0.5.4/`。
+`tests/` 是正式测试源码，`packaging/` 是构建与发行包自检脚本，`docs/` 是设计和验收文档。测试截图、日志与报告写入 `artifacts/`，构建输出写入 `dist/`，两者均不纳入版本管理。当前发行包位于 `dist/0.5.5/`。
 
 - [v0.5.3 界面更新](docs/ui-v0.5.3.md)、[M4 验收](docs/m4-status.md)、[M3 历史验收](docs/m3-status.md)、[M2 历史验收](docs/m2-status.md)、[M1 历史验收](docs/m1-status.md)
 - [架构](docs/architecture.md)、[协议](docs/protocol.md)、[执行边界](docs/security.md)
 - [Docker 沙箱验收与复测](docs/docker-sandbox.md)
-- [v0.5.4 发行说明](docs/release-v0.5.4.md)
+- [v0.5.5 发行说明](docs/release-v0.5.5.md)
 - [主循环](minicodex/backend/core/runtime.py)、[工具路由](minicodex/backend/tools/router.py)
 - [补丁](minicodex/backend/execution/patch.py)、[命令](minicodex/backend/execution/commands.py)、[Windows 句柄/进程](minicodex/backend/execution/windows.py)、[审批](minicodex/backend/execution/approval.py)
 

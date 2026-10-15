@@ -1,8 +1,10 @@
+import pytest
 from PySide6.QtCore import QPoint, Qt
 from PySide6.QtGui import QInputMethodEvent, QKeyEvent
 from PySide6.QtWidgets import QApplication, QMessageBox, QSplitter
 
 from minicodex.backend.application.facade import ApplicationFacade
+from minicodex.backend.application.settings import ModelSettings
 from minicodex.backend.core.models import Message, ModelResponse
 from minicodex.backend.llm.fake import FakeLLMProvider
 from minicodex.frontend.ui.main_window import MainWindow
@@ -39,11 +41,13 @@ def test_enter_sends_shift_enter_newline_and_ime_return_does_not_send(qtbot, tmp
         facade.close()
 
 
-def test_permission_switch_keeps_named_conversation_history_and_draft(qtbot, tmp_path):
+@pytest.mark.parametrize("environment", ["native", "docker"])
+def test_permission_switch_keeps_named_conversation_history_and_draft(qtbot, tmp_path, environment):
     provider = FakeLLMProvider(
         [ModelResponse("first reply"), ModelResponse("continued")], delay_s=0
     )
     facade = ApplicationFacade(provider, data_dir=tmp_path / "data")
+    facade.configure(ModelSettings(execution_environment=environment))
     window = MainWindow(facade)
     qtbot.addWidget(window)
     window.show()
@@ -64,6 +68,11 @@ def test_permission_switch_keeps_named_conversation_history_and_draft(qtbot, tmp
             assert window.chat.toPlainText() == original_view
             assert window.prompt.toPlainText() == "unfinished draft"
             assert facade.settings.permission_level == level
+            assert facade.settings.execution_environment == environment
+            assert facade.settings.execution_mode == (
+                "readonly" if level == "readonly" else environment
+            )
+            assert facade.configuration.load() == facade.settings
             assert facade.runtime.provider is provider
         window.send_turn()
         qtbot.waitUntil(lambda: not facade.is_running, timeout=5000)
@@ -74,8 +83,12 @@ def test_permission_switch_keeps_named_conversation_history_and_draft(qtbot, tmp
         facade.close()
 
 
-def test_permission_controls_busy_and_save_failure_roll_back(qtbot, tmp_path, monkeypatch):
+@pytest.mark.parametrize("environment", ["native", "docker"])
+def test_permission_controls_busy_and_save_failure_roll_back(
+    qtbot, tmp_path, monkeypatch, environment
+):
     facade = ApplicationFacade(FakeLLMProvider(delay_s=10), data_dir=tmp_path / "data")
+    facade.configure(ModelSettings(execution_environment=environment))
     window = MainWindow(facade)
     qtbot.addWidget(window)
     window.show()

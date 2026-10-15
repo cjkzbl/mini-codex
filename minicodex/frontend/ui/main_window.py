@@ -175,12 +175,12 @@ class MainWindow(QMainWindow):
             (
                 "默认权限",
                 "default",
-                "允许修改和 Windows 原生执行，每次操作审批；原生执行无 OS 沙箱。",
+                "允许修改文件，并在所选执行环境中运行命令；每次操作审批。",
             ),
             (
                 "完全访问",
                 "full",
-                "自动修改和运行命令，不逐次审批；原生进程具有当前用户权限。"
+                "自动修改文件，并在所选执行环境中运行命令，不逐次审批。"
                 "仍保留工具的路径、输出和预算限制。",
             ),
         ):
@@ -310,6 +310,12 @@ class MainWindow(QMainWindow):
         )
         self.permission_picker.setToolTip(
             self.permission_picker.currentData(Qt.ItemDataRole.ToolTipRole)
+            + "\n执行环境："
+            + (
+                "Docker 沙箱"
+                if self.facade.settings.execution_environment == "docker"
+                else "Windows 原生执行"
+            )
         )
         model = self.facade.settings.model if remote else "离线演示"
         self.model_button.setText(
@@ -331,7 +337,9 @@ class MainWindow(QMainWindow):
             self.facade.configure(
                 replace(
                     self.facade.settings,
-                    execution_mode="readonly" if level == "readonly" else "native",
+                    execution_mode="readonly"
+                    if level == "readonly"
+                    else self.facade.settings.execution_environment,
                     approval_policy="never" if level == "full" else "ask",
                 )
             )

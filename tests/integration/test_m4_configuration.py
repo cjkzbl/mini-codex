@@ -175,3 +175,31 @@ def test_forget_and_endpoint_switch_remove_old_owned_credentials(tmp_path):
     assert list(vault.values.values()) == ["new-key"]
     store.forget()
     assert not vault.values and json.loads(store.path.read_text())["credential_ref"] is None
+
+
+@pytest.mark.parametrize("mode", ["native", "docker", "readonly", "write"])
+def test_legacy_execution_mode_infers_environment_without_changing_permissions(tmp_path, mode):
+    path = tmp_path / "settings.json"
+    path.write_text(
+        json.dumps({"version": 2, "settings": {"execution_mode": mode, "approval_policy": "ask"}})
+    )
+    store = ConfigurationStore(tmp_path, MemoryCredentials())
+    settings = store.load()
+    assert not store.readonly and not store.warning
+    assert settings.execution_mode == mode
+    assert settings.execution_environment == ("docker" if mode == "docker" else "native")
+    readonly = replace(settings, execution_mode="readonly")
+    store.save(readonly, remember=False)
+    restored = ConfigurationStore(tmp_path, MemoryCredentials()).load()
+    assert restored == readonly and restored.permission_level == "readonly"
+    assert restored.execution_environment == settings.execution_environment
+
+
+@pytest.mark.parametrize("value", ["unknown", 123])
+def test_invalid_saved_execution_environment_fails_closed(tmp_path, value):
+    path = tmp_path / "settings.json"
+    raw = json.dumps({"version": 2, "settings": {"execution_environment": value}})
+    path.write_text(raw)
+    store = ConfigurationStore(tmp_path, MemoryCredentials())
+    assert store.load() == ModelSettings() and store.readonly
+    assert path.read_text() == raw

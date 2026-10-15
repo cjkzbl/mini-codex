@@ -1,4 +1,4 @@
-param([string]$BundleDirectory = 'dist/0.5.4/MiniCodex', [string]$Compiler = '', [switch]$TestBuild)
+param([string]$BundleDirectory = 'dist/0.5.5/MiniCodex', [string]$Compiler = '', [switch]$TestBuild)
 $ErrorActionPreference = 'Stop'
 $projectRoot = Split-Path -Parent $PSScriptRoot
 $bundleRoot = [IO.Path]::GetFullPath((Join-Path $projectRoot $BundleDirectory))

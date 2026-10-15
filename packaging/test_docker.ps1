@@ -11,6 +11,7 @@ $originalPath = $env:PATH
 $originalDockerTests = $env:MINICODEX_DOCKER_TESTS
 $originalDockerImage = $env:MINICODEX_DOCKER_IMAGE
 $originalBytecode = $env:PYTHONDONTWRITEBYTECODE
+$originalQt = $env:QT_QPA_PLATFORM
 Push-Location $projectRoot
 try {
     if (-not (Get-Command docker -ErrorAction SilentlyContinue)) {
@@ -39,6 +40,7 @@ try {
     $env:MINICODEX_DOCKER_TESTS = '1'
     $env:MINICODEX_DOCKER_IMAGE = $Image
     $env:PYTHONDONTWRITEBYTECODE = '1'
+    $env:QT_QPA_PLATFORM = 'offscreen'
     $pytestArgs = @('-B', '-m', 'pytest', '-q', '--tb=short', '-p', 'no:cacheprovider',
         'tests/unit/test_docker.py', 'tests/integration/test_docker_sandbox.py')
     if ($Report) { $pytestArgs += @('--junitxml', $Report) }
@@ -49,5 +51,6 @@ try {
     $env:MINICODEX_DOCKER_TESTS = $originalDockerTests
     $env:MINICODEX_DOCKER_IMAGE = $originalDockerImage
     $env:PYTHONDONTWRITEBYTECODE = $originalBytecode
+    $env:QT_QPA_PLATFORM = $originalQt
     Pop-Location
 }

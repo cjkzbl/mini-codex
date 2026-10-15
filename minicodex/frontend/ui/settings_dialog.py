@@ -43,6 +43,7 @@ class SettingsDialog(QDialog):
         self.result_settings: ModelSettings | None = None
         self.configuration = configuration
         self._execution_mode = settings.execution_mode
+        self._initial_environment = settings.execution_environment
         self._approval_policy = settings.approval_policy
         self.workspace = workspace
         self._initial_key = settings.api_key
@@ -71,6 +72,13 @@ class SettingsDialog(QDialog):
         self.mode.addItem("离线演示（真实列文件工具，无 API 费用）", "fake")
         self.mode.addItem("OpenAI-compatible API", "compatible")
         self.mode.setCurrentIndex(0 if settings.mode == "fake" else 1)
+        self.execution_environment = QComboBox()
+        self.execution_environment.setObjectName("executionEnvironmentPicker")
+        self.execution_environment.addItem("Windows 原生执行", "native")
+        self.execution_environment.addItem("Docker 沙箱", "docker")
+        self.execution_environment.setCurrentIndex(
+            self.execution_environment.findData(settings.execution_environment)
+        )
         self.base_url = QLineEdit(settings.base_url)
         self.model = QLineEdit(settings.model)
         self.model.setPlaceholderText("服务支持的模型 ID，需支持工具调用")
@@ -126,6 +134,8 @@ class SettingsDialog(QDialog):
         python_layout.addWidget(browse)
         for title, widget in (
             ("模式", self.mode),
+            ("执行环境", self.execution_environment),
+            ("Docker 本地镜像", self.docker_image),
             ("API Base URL", self.base_url),
             ("模型名称", self.model),
             ("API Key", self.key),
@@ -136,7 +146,6 @@ class SettingsDialog(QDialog):
             ("单次 HTTP 超时", self.timeout),
             ("本轮总时限", self.turn_timeout),
             ("命令超时上限", self.command_timeout),
-            ("Docker 本地镜像", self.docker_image),
             ("上下文预算（估算 Token）", self.context_tokens),
             ("回答预留 Token", self.response_reserve),
             ("本轮累计输入预算", self.turn_tokens),
@@ -150,9 +159,12 @@ class SettingsDialog(QDialog):
         self.deepseek_hint.setTextFormat(Qt.TextFormat.PlainText)
         layout.addWidget(self.deepseek_hint)
         self.execution_hint = QLabel(
-            "权限在输入框左下角选择：只读 / 默认权限（逐次审批）/ 完全访问（自动执行）。"
+            "执行环境在上方选择，权限在输入框左下角选择："
+            "只读 / 默认权限（逐次审批）/ 完全访问（自动执行）。"
+            "更换执行环境不会改变审批权限；只读时不会执行命令。"
             "原生执行无 OS 沙箱，仅用于可信项目；"
-            "Docker 在过滤后的临时项目副本运行，修改不写回。\n"
+            "Docker 命令在过滤后的临时项目副本运行，命令改动不写回；"
+            "文件补丁仍按权限修改原项目。\n"
             + "检测到：Git "
             + (shutil.which("git") or "未安装")
             + "；Docker "
@@ -191,7 +203,9 @@ class SettingsDialog(QDialog):
         outer.addWidget(buttons)
         self.mode.currentIndexChanged.connect(self.update_mode)
         self.base_url.textChanged.connect(self.update_mode)
+        self.execution_environment.currentIndexChanged.connect(self.update_execution_environment)
         self.update_mode()
+        self.update_execution_environment()
         self.check_dependencies()
         screen = self.screen()
         if screen:
@@ -259,6 +273,9 @@ class SettingsDialog(QDialog):
         self.model.setText("deepseek-flash")
         self.error_label.clear()
 
+    def update_execution_environment(self) -> None:
+        self.docker_image.setEnabled(self.execution_environment.currentData() == "docker")
+
     def update_mode(self) -> None:
         try:
             host = urlsplit(self.base_url.text().strip()).netloc.casefold()
@@ -279,6 +296,12 @@ class SettingsDialog(QDialog):
 
     def save(self) -> None:
         try:
+            environment = self.execution_environment.currentData()
+            execution_mode = self._execution_mode
+            if execution_mode in {"native", "docker"} or (
+                execution_mode == "write" and environment != self._initial_environment
+            ):
+                execution_mode = environment
             self.result_settings = ModelSettings(
                 mode=self.mode.currentData(),
                 base_url=self.base_url.text().strip(),
@@ -289,7 +312,8 @@ class SettingsDialog(QDialog):
                 max_tool_calls=self.tools.value(),
                 timeout_s=self.timeout.value(),
                 max_turn_s=self.turn_timeout.value(),
-                execution_mode=self._execution_mode,
+                execution_mode=execution_mode,
+                execution_environment=environment,
                 approval_policy=self._approval_policy,
                 command_timeout_s=self.command_timeout.value(),
                 docker_image=self.docker_image.text().strip(),

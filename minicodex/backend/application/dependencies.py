@@ -52,9 +52,9 @@ def discover(settings: ModelSettings, workspace: Path | None = None) -> list[Dep
         Dependency(
             "Docker",
             docker,
-            "已找到路径；Docker 实机功能继续暂缓。"
+            "已找到路径（未执行）；运行命令前还需启动 Linux 后端并准备本地镜像。"
             if docker
-            else "未安装；Docker 功能暂缓，不影响只读、补丁和 Windows 原生执行。",
+            else "未找到。安装 Docker Desktop 并重启应用；不影响只读、补丁和 Windows 原生执行。",
         ),
         Dependency("运行环境", os.name, "客户端自带的运行时不等于目标项目 Python。"),
     ]

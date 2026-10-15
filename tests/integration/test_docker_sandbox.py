@@ -8,7 +8,9 @@ from threading import Event
 from types import SimpleNamespace
 
 import pytest
+from PySide6.QtCore import Qt
 
+from minicodex.backend.application.facade import ApplicationFacade
 from minicodex.backend.application.settings import ModelSettings
 from minicodex.backend.core.events import EventKind
 from minicodex.backend.core.history import validate_history
@@ -24,6 +26,8 @@ from minicodex.backend.execution import commands
 from minicodex.backend.execution.approval import ApprovalManager
 from minicodex.backend.execution.workspace import Workspace
 from minicodex.backend.llm.fake import FakeLLMProvider
+from minicodex.frontend.ui.main_window import MainWindow
+from minicodex.frontend.ui.settings_dialog import SettingsDialog
 
 pytestmark = pytest.mark.docker
 
@@ -342,3 +346,77 @@ async def test_real_runtime_approval_receipts_and_file_metrics(sandbox, docker_e
     assert path.read_text(encoding="utf-8") == (
         "user edit after approval" if decision == "edit_project" else "original"
     )
+
+
+@pytest.mark.parametrize("level", ["default", "full"])
+def test_real_gui_environment_selection_routes_commands_to_docker(
+    sandbox, docker_engine, qtbot, tmp_path, monkeypatch, level
+):
+    source = sandbox.root / "source.txt"
+    source.write_text("original", encoding="utf-8")
+    provider = FakeLLMProvider(
+        [
+            ModelResponse(
+                tool_calls=(
+                    ToolCall(
+                        "gui-docker-command",
+                        "run_command",
+                        {
+                            "argv": [
+                                "python",
+                                "-c",
+                                "from pathlib import Path;"
+                                "Path('source.txt').write_text('container');"
+                                "print('GUI Docker verified')",
+                            ]
+                        },
+                    ),
+                )
+            ),
+            ModelResponse(text="GUI Docker task completed"),
+        ],
+        delay_s=0,
+    )
+    facade = ApplicationFacade(provider, data_dir=tmp_path / "gui-client-data")
+    window = MainWindow(facade)
+    qtbot.addWidget(window)
+    window.show()
+
+    def select_docker(dialog):
+        dialog.execution_environment.setCurrentIndex(
+            dialog.execution_environment.findData("docker")
+        )
+        dialog.docker_image.setText(docker_engine.image)
+        dialog.save()
+        return dialog.result()
+
+    monkeypatch.setattr(SettingsDialog, "exec", select_docker)
+    try:
+        window.open_workspace(sandbox.root)
+        window.configure_model()
+        assert facade.settings.permission_level == "readonly"
+        assert facade.settings.execution_environment == "docker"
+        index = window.permission_picker.findData(level)
+        window.permission_picker.setCurrentIndex(index)
+        window.permission_picker.activated.emit(index)
+        assert facade.settings.execution_mode == "docker"
+        window.prompt.setPlainText("Run a command in the chosen Docker environment")
+        qtbot.mouseClick(window.send_button, Qt.MouseButton.LeftButton)
+        if level == "default":
+            qtbot.waitUntil(lambda: window._approval_id is not None, timeout=15000)
+            qtbot.mouseClick(window.approve_button, Qt.MouseButton.LeftButton)
+        qtbot.waitUntil(lambda: not facade.is_running, timeout=30000)
+        assert window.status_label.text() == "已完成"
+        receipt = json.loads(
+            next(message.content for message in facade.thread.history if message.role == "tool")
+        )
+        result = json.loads(receipt["result"])
+        assert receipt["success"] and result["platform"] == "Docker Linux"
+        assert sandbox.names and source.read_text(encoding="utf-8") == "original"
+        turn = facade.thread.turns[-1]
+        assert not turn.edited_files
+        requested = [event for event in turn.events if event.kind == EventKind.APPROVAL_REQUESTED]
+        assert len(requested) == (1 if level == "default" else 0)
+        assert "GUI Docker verified" in window.chat.toPlainText()
+    finally:
+        window.close()

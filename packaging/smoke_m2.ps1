@@ -1,4 +1,4 @@
-param([string]$BundleDirectory = "dist/0.5.4/MiniCodex", [string]$ProjectPython = "")
+param([string]$BundleDirectory = "dist/0.5.5/MiniCodex", [string]$ProjectPython = "")
 $ErrorActionPreference = "Stop"
 $projectRoot = Split-Path -Parent $PSScriptRoot
 if (-not $ProjectPython) { $ProjectPython = Join-Path $projectRoot ".venv\Scripts\python.exe" }

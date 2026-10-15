@@ -2,7 +2,7 @@
 
 2026-10-15（Asia/Shanghai）在 Windows 11、WSL 2.6.1、Docker Desktop 4.95.0 / Docker Engine 29.8.2、Linux cgroup v2 上验证。Python 为 3.13.7，基础镜像为本地 `python:3.12-slim`。运行真实 Windows Job/CLI 执行链，未使用替代的 Linux subprocess 执行器。
 
-结果：全量 **260 passed**；Docker 专项为 **51 项离线回归 + 14 项真实容器测试**。普通测试默认不要求 Docker，显式跳过 14 项实机测试。真实测试不调用外部模型，不使用用户凭据。
+v0.5.5 复验结果：全量 **280 passed**；Docker 专项为 **51 项离线回归 + 16 项真实容器测试**。普通测试默认不要求 Docker，显式跳过 16 项实机测试。真实测试不调用外部模型，不使用用户凭据。
 
 ## 实机覆盖
 
@@ -20,6 +20,7 @@
 | 回执与输出 | 非零容器退出码、stdout/stderr 实时回调、双通道大输出排空且各限 32000 字节 |
 | 生命周期 | 正常退出带子进程、取消、超时后，独立查询确认容器、匿名卷及临时副本已移除 |
 | 审批与运行时 | 真实工具轮次覆盖批准、拒绝、审批后修改项目/参数；校验回执配对及宿主编辑指标 |
+| GUI 入口 | 在模型设置中选择 Docker，再切换默认或完全访问，分别验证 GUI 审批/自动执行、Docker 回执及宿主文件不变 |
 | 缺失镜像 | 本地镜像不存在时拒绝，不触发拉取或宿主执行 |
 
 测试为每次运行构建一个独有名称的轻量镜像，继承已准备好的 Python 基础镜像，只增加配置。结束时移除该测试镜像标签及本次创建的资源，不运行 prune，也不清理其他用户容器、镜像或卷。基础镜像保留供后续使用。
@@ -56,6 +57,6 @@ $env:PATH = "$env:LOCALAPPDATA\Programs\DockerDesktop\resources\bin;" + $env:PAT
 Remove-Item Env:MINICODEX_DOCKER_TESTS
 ```
 
-常规 GitHub Windows CI 运行离线回归，默认跳过实机组，不将 hosted runner 当作已配置 Docker Desktop 的验收机。实机测试要求 Linux cgroup v2；其他 Docker Desktop/Engine 版本、cgroup v1、非 Windows 客户端、恶意内核或 daemon 漏洞不在本次验收范围。执行器修复随 v0.5.4 重新打包发布；旧的 v0.5.3 程序包不包含这些修复。
+常规 GitHub Windows CI 运行离线回归，默认跳过实机组，不将 hosted runner 当作已配置 Docker Desktop 的验收机。实机测试要求 Linux cgroup v2；其他 Docker Desktop/Engine 版本、cgroup v1、非 Windows 客户端、恶意内核或 daemon 漏洞不在本次验收范围。执行器修复随 v0.5.4 发布，GUI 执行环境入口随 v0.5.5 发布。
 
 参考：[Docker Desktop Windows 安装](https://docs.docker.com/desktop/setup/install/windows-install/)、[Docker create](https://docs.docker.com/reference/cli/docker/container/create/)、[容器资源限制](https://docs.docker.com/engine/containers/resource_constraints/)。

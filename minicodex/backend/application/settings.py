@@ -22,6 +22,7 @@ class ModelSettings:
     max_tool_calls: int = 50
     max_turn_s: float = 180.0
     execution_mode: str = "readonly"
+    execution_environment: str = "native"
     command_timeout_s: float = 60.0
     docker_image: str = "python:3.12-slim"
     context_tokens: int = 32_000
@@ -41,6 +42,11 @@ class ModelSettings:
         return self.mode == "compatible" and is_deepseek_url(self.base_url)
 
     def __post_init__(self) -> None:
+        if self.execution_environment not in {"native", "docker"}:
+            raise ValueError("未知执行环境")
+        # Active legacy modes identify their environment; readonly keeps the saved preference.
+        if self.execution_mode in {"native", "docker"}:
+            object.__setattr__(self, "execution_environment", self.execution_mode)
         if self.approval_policy not in {"ask", "never"}:
             raise ValueError("未知审批策略")
         if any(char in self.api_key for char in "\r\n\x00"):

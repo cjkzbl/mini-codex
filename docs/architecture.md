@@ -24,6 +24,8 @@ minicodex/
 
 `tests/` 保存单元、集成、安全、GUI 和端到端测试；`packaging/` 保存 Windows 构建、安装器及发行包自检脚本；`docs/` 保存设计与历史验收说明。`.venv/` 和 `.tools/` 是本地开发依赖，`artifacts/`、缓存及旧版 `dist/` 是可再生成的验证或构建输出。
 
+执行环境与审批权限独立：`ModelSettings.execution_environment` 保存用户选择的 `native` / `docker`，即使当前只读也保留；`execution_mode` 仍表示后端当前有效模式，只读时为 `readonly`，允许命令时使用所选环境。权限菜单只切换有效模式及审批策略，不将环境写死为 native。模型设置只切换环境，不提高权限。旧配置没有新字段时，由原有 native/docker 模式恢复环境，其他模式默认 native；现有 JSON 配置版本兼容。
+
 ```text
 Qt 主线程：MainWindow / ConversationView / SettingsDialog
   ↓ StartTurn / cancel / configure / resume / rename_thread
