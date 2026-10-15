@@ -1,5 +1,6 @@
 import hashlib
 import json
+import math
 import os
 import re
 import shutil
@@ -98,11 +99,20 @@ def prepare_command(
         not isinstance(argv, list)
         or not argv
         or any(not isinstance(v, str) or "\x00" in v for v in argv)
+        or not argv[0]
     ):
         raise ValueError("argv 必须是非空字符串数组")
     cwd = args.get("cwd", ".")
     workspace.resolve(cwd, directory=True)
-    timeout = min(float(args.get("timeout_s", max_timeout)), max_timeout)
+    requested_timeout = float(args.get("timeout_s", max_timeout))
+    if (
+        not math.isfinite(requested_timeout)
+        or not math.isfinite(max_timeout)
+        or requested_timeout <= 0
+        or max_timeout <= 0
+    ):
+        raise ValueError("命令超时必须为正的有限数值")
+    timeout = min(requested_timeout, max_timeout)
     if mode == "native":
         argv = [executable(argv[0]), *argv[1:]]
     elif mode != "docker":
@@ -212,6 +222,8 @@ class DockerExecutor:
         cancel: Event,
         on_output: Callable[[str, str], None] | None = None,
     ) -> dict[str, Any]:
+        if cancel.is_set():
+            raise InterruptedError("任务已取消")
         docker = executable("docker")
 
         def invoke(args: list[str], *, cleanup: bool = False) -> dict[str, Any]:
@@ -227,8 +239,10 @@ class DockerExecutor:
             raise ValueError("Docker Linux 后端不可用；不会降级为宿主执行")
         inspected = invoke(["image", "inspect", "--format", "{{.Id}}", plan.image])
         image_id = inspected["stdout"].strip()
-        if inspected["exit_code"] != 0 or not image_id.startswith("sha256:") or len(image_id) != 71:
+        if inspected["exit_code"] != 0 or not re.fullmatch(r"sha256:[a-f0-9]{64}", image_id):
             raise ValueError("Docker 镜像未就绪，请先准备指定镜像；客户端不会自动下载")
+        if image_id != plan.image:
+            raise ValueError("Docker 镜像与审批时的固定 ID 不一致，批准已失效")
         contents, digest = manifest(workspace, cancel)
         if digest != plan.workspace_digest:
             raise ValueError("审批后项目内容已变化，命令审批失效")
@@ -240,22 +254,29 @@ class DockerExecutor:
         with tempfile.TemporaryDirectory(prefix="minicodex-exec-") as folder:
             snapshot = Path(folder)
             for path, content in contents.items():
+                if cancel.is_set():
+                    raise InterruptedError("任务已取消")
                 target = snapshot / path
                 target.parent.mkdir(parents=True, exist_ok=True)
                 target.write_bytes(content)
             if "," in str(snapshot):
                 raise ValueError("Docker 快照路径不能含逗号")
+            if cancel.is_set():
+                raise InterruptedError("任务已取消")
             try:
                 created = invoke(
                     [
                         "create",
                         "--name",
                         name,
+                        "--label",
+                        "com.minicodex.sandbox=1",
                         "--pull",
                         "never",
                         "--network",
                         "none",
                         "--read-only",
+                        "--no-healthcheck",
                         "--cap-drop",
                         "ALL",
                         "--security-opt",
@@ -271,7 +292,7 @@ class DockerExecutor:
                         "--user",
                         "65534:65534",
                         "--tmpfs",
-                        "/tmp:rw,nosuid,size=128m",
+                        "/tmp:rw,nosuid,nodev,size=128m",
                         "--mount",
                         f"type=bind,src={snapshot},dst=/workspace",
                         "--workdir",
@@ -299,12 +320,24 @@ class DockerExecutor:
                     on_output,
                 )
                 state = invoke(["inspect", "--format", "{{json .State}}", name], cleanup=True)
-                if state["exit_code"] == 0 and result["state"] == "completed":
-                    details = json.loads(state["stdout"])
-                    if details.get("Running"):
-                        result["state"] = "unknown"
-                    else:
-                        result["exit_code"] = details.get("ExitCode")
+                if result["state"] == "completed":
+                    try:
+                        details = json.loads(state["stdout"])
+                        finished = (
+                            state["exit_code"] == 0
+                            and isinstance(details, dict)
+                            and details.get("Running") is False
+                            and details.get("Status") == "exited"
+                            and not details.get("Error")
+                            and type(details.get("ExitCode")) is int
+                        )
+                    except (TypeError, ValueError):
+                        finished = False
+                    if not finished:
+                        raise RuntimeError(f"容器退出状态未确认：{name}；结果未知；禁止自动重放")
+                    result["exit_code"] = details["ExitCode"]
+                else:
+                    result["exit_code"] = None
                 result.update(
                     {
                         "platform": "Docker Linux",
@@ -315,17 +348,35 @@ class DockerExecutor:
                 )
                 return result
             finally:
-                invoke(["rm", "--force", "--volumes", name], cleanup=True)
-                inspected = invoke(["inspect", "--format", "{{.Id}}", name], cleanup=True)
+                cleanup_error: Exception | None = None
+                try:
+                    invoke(["rm", "--force", "--volumes", name], cleanup=True)
+                except (OSError, RuntimeError) as error:
+                    cleanup_error = error
+                try:
+                    inspected = invoke(["inspect", "--format", "{{.Id}}", name], cleanup=True)
+                except (OSError, RuntimeError) as error:
+                    raise RuntimeError(
+                        f"容器清理未确认：{name}；结果未知，需手动清理；禁止自动重放"
+                    ) from error
                 absent = (
-                    inspected["exit_code"] != 0
-                    and "no such" in inspected["stderr"].casefold()
-                    and name in inspected["stderr"]
+                    inspected.get("state") == "completed"
+                    and inspected["exit_code"] != 0
+                    and any(
+                        line.strip().casefold()
+                        in {
+                            f"error: no such object: {name}",
+                            f"error: no such container: {name}",
+                            f"error response from daemon: no such container: {name}",
+                            f"no such object: {name}",
+                        }
+                        for line in inspected["stderr"].splitlines()
+                    )
                 )
                 if not absent:
                     raise RuntimeError(
                         f"容器清理未确认：{name}；结果未知，需手动清理；禁止自动重放"
-                    )
+                    ) from cleanup_error
 
 
 def run_plan(
